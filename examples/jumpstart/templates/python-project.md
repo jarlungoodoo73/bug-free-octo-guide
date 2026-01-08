@@ -3,7 +3,7 @@
 Quick-start template for creating a Python project with GitHub CLI.
 
 ## Features
-- Python 3.8+
+- Python 3.9+
 - Virtual environment setup
 - Testing with pytest
 - GitHub Actions CI/CD
@@ -130,7 +130,7 @@ setup(
             "flake8>=5.0.0",
         ],
     },
-    python_requires=">=3.8",
+    python_requires=">=3.9",
 )
 EOF
 ```
@@ -152,7 +152,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
     
     steps:
     - uses: actions/checkout@v3
@@ -172,7 +172,7 @@ jobs:
     
     - name: Format check with black
       run: |
-        black --check src tests
+        black --check --diff src tests
     
     - name: Test with pytest
       run: |

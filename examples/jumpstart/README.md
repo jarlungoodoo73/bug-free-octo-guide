@@ -23,9 +23,6 @@ cd my-project
 Set up a basic project structure:
 
 ```bash
-# Initialize git
-git init
-
 # Create a README
 echo "# My Project" > README.md
 
