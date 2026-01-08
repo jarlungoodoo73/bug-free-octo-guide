@@ -103,7 +103,12 @@ npm-debug.log
 EOF
 ```
 
-### 7. Create GitHub Actions Workflow
+### 7. Add Test Script
+```bash
+npm pkg set scripts.test="echo \"No tests yet\" && exit 0"
+```
+
+### 8. Create GitHub Actions Workflow
 ```bash
 mkdir -p .github/workflows
 cat > .github/workflows/ci.yml << 'EOF'
@@ -128,7 +133,7 @@ jobs:
 EOF
 ```
 
-### 8. Commit and Push
+### 9. Commit and Push
 ```bash
 git add .
 git commit -m "Initial web app setup"
@@ -146,9 +151,4 @@ Visit http://localhost:3000 to see your app.
 
 ## Deployment
 
-Deploy to GitHub Pages, Vercel, or your preferred hosting platform.
-
-For GitHub Pages:
-```bash
-gh workflow run deploy.yml
-```
+Deploy to GitHub Pages, Vercel, Heroku, or your preferred hosting platform using the GitHub CLI and your hosting provider's tools.
