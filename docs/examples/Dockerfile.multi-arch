@@ -1,0 +1,94 @@
+# Multi-Architecture Docker Example
+# This Dockerfile demonstrates how to properly handle architecture-specific downloads
+# Based on the fix for: https://github.com/xpipe-io/xpipe-webtop/actions/runs/20578223451/job/59099982309
+
+FROM ubuntu:22.04
+
+# Declare build arguments that Docker provides automatically
+ARG TARGETARCH
+ARG TARGETPLATFORM
+
+# Install basic dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    curl \
+    sudo \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Example 1: AWS CLI installation (works for both amd64 and arm64)
+RUN echo "**** Installing AWS CLI ****" && \
+    if [ "$TARGETARCH" = "amd64" ]; then \
+        AWS_ARCH="x86_64"; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        AWS_ARCH="aarch64"; \
+    else \
+        echo "Unsupported architecture: $TARGETARCH"; \
+        exit 1; \
+    fi && \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-${AWS_ARCH}.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf awscliv2.zip aws
+
+# Example 2: AWS Session Manager Plugin (THE FIX)
+RUN echo "**** Installing AWS Session Manager Plugin ****" && \
+    if [ "$TARGETARCH" = "amd64" ]; then \
+        ARCH_SUFFIX="ubuntu_64bit"; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        ARCH_SUFFIX="ubuntu_arm64"; \
+    else \
+        echo "Unsupported architecture: $TARGETARCH"; \
+        exit 1; \
+    fi && \
+    curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/${ARCH_SUFFIX}/session-manager-plugin.deb" -o "/tmp/session-manager-plugin.deb" && \
+    dpkg -i "/tmp/session-manager-plugin.deb" && \
+    rm -f "/tmp/session-manager-plugin.deb"
+
+# Example 3: Alternative approach using TARGETPLATFORM
+RUN echo "**** Example using TARGETPLATFORM: $TARGETPLATFORM ****" && \
+    case "$TARGETPLATFORM" in \
+        "linux/amd64") \
+            echo "Building for AMD64"; \
+            EXAMPLE_URL="example-amd64.tar.gz"; \
+            ;; \
+        "linux/arm64") \
+            echo "Building for ARM64"; \
+            EXAMPLE_URL="example-arm64.tar.gz"; \
+            ;; \
+        "linux/arm/v7") \
+            echo "Building for ARMv7"; \
+            EXAMPLE_URL="example-armv7.tar.gz"; \
+            ;; \
+        *) \
+            echo "Unsupported platform: $TARGETPLATFORM"; \
+            exit 1; \
+            ;; \
+    esac && \
+    echo "Would download: $EXAMPLE_URL"
+
+# Example 4: Using dpkg for architecture detection (runtime detection)
+RUN echo "**** Example using dpkg architecture ****" && \
+    DPKG_ARCH=$(dpkg --print-architecture) && \
+    echo "Detected architecture: $DPKG_ARCH" && \
+    if [ "$DPKG_ARCH" = "amd64" ]; then \
+        echo "Running on AMD64 architecture"; \
+    elif [ "$DPKG_ARCH" = "arm64" ]; then \
+        echo "Running on ARM64 architecture"; \
+    fi
+
+# Verify installations
+RUN aws --version && \
+    session-manager-plugin --version
+
+# Build instructions:
+# Build for both architectures:
+#   docker buildx build --platform linux/amd64,linux/arm64 -t multi-arch-example:latest .
+#
+# Build for specific architecture:
+#   docker buildx build --platform linux/amd64 -t multi-arch-example:amd64 .
+#   docker buildx build --platform linux/arm64 -t multi-arch-example:arm64 .
+#
+# Test the build:
+#   docker run --rm multi-arch-example:amd64 bash -c "uname -m && aws --version"
+#   docker run --rm multi-arch-example:arm64 bash -c "uname -m && aws --version"
